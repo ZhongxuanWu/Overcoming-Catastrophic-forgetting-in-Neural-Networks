@@ -50,9 +50,12 @@ class ElasticWeightConsolidation:
         except AttributeError:
             return 0
 
-    def forward_backward_update(self, input, target):
+    def forward_backward_update(self, input, target, EWC_reg=True):
         output = self.model(input)
-        loss = self._compute_consolidation_loss(self.weight) + self.crit(output, target)
+        if EWC_reg:
+            loss = self._compute_consolidation_loss(self.weight) + self.crit(output, target)
+        else:
+            loss = self.crit(output, target)
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
