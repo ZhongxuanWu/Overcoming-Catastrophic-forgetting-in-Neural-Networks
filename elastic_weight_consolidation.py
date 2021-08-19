@@ -27,7 +27,7 @@ class ElasticWeightConsolidation:
             if i > num_batch:
                 break
             output = F.log_softmax(self.model(input), dim=1)
-            log_liklihoods.append(output[:, target])
+            log_liklihoods.append(torch.flatten(output[:, target]))
         log_likelihood = torch.cat(log_liklihoods).mean()
         grad_log_liklihood = autograd.grad(log_likelihood, self.model.parameters())
         _buff_param_names = [param[0].replace('.', '__') for param in self.model.named_parameters()]
