@@ -29,9 +29,9 @@ log = {
 }
 
 param_grid = {
-    'c':[0.6, 0.8, 1.0],
-    'xi':[0.9, 1.0],
-    'lr':[1e-4, 1e-3, 1e-2, 1e-1],
+    'c':[0.6],
+    'xi':[1.0],
+    'lr':[1e-4],
 }
 param_grid = ParameterGrid(param_grid)
 

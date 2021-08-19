@@ -3,6 +3,7 @@
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
 # https://github.com/aimagelab/mammoth
+# https://pythonawesome.com/an-extendible-general-continual-learning-framework-for-pytorch/
 
 import torch
 import torch.nn as nn
