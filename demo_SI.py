@@ -19,27 +19,47 @@ f_mnist_test = datasets.FashionMNIST("./", train=False, download=True, transform
 f_train_loader = DataLoader(f_mnist_train, batch_size = 100, shuffle=True)
 f_test_loader = DataLoader(f_mnist_test, batch_size = 100, shuffle=False)
 
-# model
-net = BaseModel(28 * 28, 100, 10)
-crit = nn.CrossEntropyLoss()
-args = Args(lr=1e-4, c=0.5, xi=1.0, batch_size=128, n_epochs=8)
-opt = torch.optim.Adam(net.parameters(), args.lr)
-si = SI(backbone = net, loss = crit, args = args, transform = transforms.ToTensor(), opt = opt)
+log = {
+    'c': 0,
+    'xi': 0,
+    'acc': 0,
+}
 
-# training
-si.net.train()
-for _ in range(args.n_epochs):
-    for inputs, targets in tqdm(train_loader):
-        inputs, targets = inputs.to(si.device), targets.to(si.device)
-        loss = si.observe(inputs, targets, not_aug_inputs=None, SI_reg=False)
-si.end_task(dataset=train_loader)
-for _ in range(args.n_epochs):
-    for inputs, targets in tqdm(f_train_loader):
-        inputs, targets = inputs.to(si.device), targets.to(si.device)
-        loss = si.observe(inputs, targets, not_aug_inputs=None, SI_reg=False)
-si.end_task(dataset=f_train_loader)
+for c in [0.6]:
+    for xi in [0.9]:
+        
+        # model
+        net = BaseModel(28 * 28, 100, 10)
+        crit = nn.CrossEntropyLoss()
+        args = Args(lr=1e-4, c=c, xi=xi, batch_size=100, n_epochs=5)
+        opt = torch.optim.Adam(net.parameters(), args.lr)
+        si = SI(backbone = net, loss = crit, args = args, transform = transforms.ToTensor(), opt = opt)
 
-si.net.eval()
-print('taskA: MNIST', accu(si.net, test_loader, si.device))
-print('taskB: fashion-MNIST', accu(si.net, f_test_loader, si.device))
+        # training & testing
+        si.net.train()
+        for _ in range(args.n_epochs):
+            for inputs, targets in tqdm(train_loader):
+                inputs, targets = inputs.to(si.device), targets.to(si.device)
+                loss = si.observe(inputs, targets, not_aug_inputs=None, SI_reg=False)
+        si.end_task(dataset=train_loader)
+        si.net.eval()
+        print('taskA: MNIST', accu(si.net, test_loader, si.device))
+        print('taskB: fashion-MNIST', accu(si.net, f_test_loader, si.device))
 
+        si.net.train()
+        for _ in range(args.n_epochs):
+            for inputs, targets in tqdm(f_train_loader):
+                inputs, targets = inputs.to(si.device), targets.to(si.device)
+                loss = si.observe(inputs, targets, not_aug_inputs=None, SI_reg=False)
+        si.end_task(dataset=f_train_loader)
+        si.net.eval()
+        print('taskA: MNIST', accu(si.net, test_loader, si.device))
+        print('taskB: fashion-MNIST', accu(si.net, f_test_loader, si.device))
+
+        continual_perf = accu(si.net, test_loader, si.device)
+        if log['acc'] < continual_perf:
+            log['c'] = c
+            log['xi'] = xi
+            log['acc'] = continual_perf
+
+print(log)
