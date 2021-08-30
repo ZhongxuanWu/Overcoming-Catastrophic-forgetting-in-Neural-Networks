@@ -1,0 +1,1 @@
+python ./utils/main.py --model si --load_best_args --dataset perm-mnist

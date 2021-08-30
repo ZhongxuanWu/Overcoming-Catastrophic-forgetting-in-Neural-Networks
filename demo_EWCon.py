@@ -7,7 +7,7 @@ from torchvision import datasets, transforms
 from sklearn.model_selection import ParameterGrid
 from tqdm import tqdm
 from model import LinearLayer, Flatten, BaseModel
-from baselines import SI
+from baselines import EwcOn
 from utils import Args, accu
 
 # data
@@ -22,56 +22,56 @@ f_train_loader = DataLoader(f_mnist_train, batch_size = 100, shuffle=True)
 f_test_loader = DataLoader(f_mnist_test, batch_size = 100, shuffle=False)
 
 log = {
-    'c': 0,
-    'xi': 0,
+    'e_lambda': 0,
+    'gamma': 0,
     'lr':0,
     'acc': 0,
 }
 
 param_grid = {
-    'c':[1e4],
-    'xi':[0.5],
+    'e_lambda': [0.7],
+    'gamma': [1.0],
     'lr':[1e-4],
 }
 param_grid = ParameterGrid(param_grid)
 
 for params in param_grid:
     # retrieve parameters
-    c = params['c']
-    xi = params['xi']
+    e_lambda = params['e_lambda']
+    gamma = params['gamma']
     lr = params['lr']
-    print(c, xi, lr)
+    print(params)
     
     # model
     net = BaseModel(28 * 28, 100, 10)
     crit = nn.CrossEntropyLoss()
-    args = Args(lr=lr, c=c, xi=xi, batch_size=100, n_epochs=5)
+    args = Args(lr=lr, e_lambda=e_lambda, gamma=gamma, batch_size=100, n_epochs=5)
     opt = torch.optim.Adam(net.parameters(), args.lr)
-    si = SI(backbone = net, loss = crit, args = args, transform = transforms.ToTensor(), opt = opt)
+    ewcon = EwcOn(backbone = net, loss = crit, args = args, transform = transforms.ToTensor(), opt = opt)
 
     # training & testing
-    si.net.train()
+    ewcon.net.train()
     for _ in range(args.n_epochs):
         for inputs, targets in tqdm(train_loader):
-            inputs, targets = inputs.to(si.device), targets.to(si.device)
-            loss = si.observe(inputs, targets, not_aug_inputs=None, SI_reg=True)
-    si.end_task(dataset=train_loader)
-    si.net.eval()
-    print('taskA: MNIST', accu(si.net, test_loader, si.device))
-    print('taskB: fashion-MNIST', accu(si.net, f_test_loader, si.device))
+            inputs, targets = inputs.to(ewcon.device), targets.to(ewcon.device)
+            loss = ewcon.observe(inputs, targets, not_aug_inputs=None)
+    ewcon.end_task(dataset=train_loader)
+    ewcon.net.eval()
+    print('taskA: MNIST', accu(ewcon.net, test_loader, ewcon.device))
+    print('taskB: fashion-MNIST', accu(ewcon.net, f_test_loader, ewcon.device))
 
-    si.net.train()
+    ewcon.net.train()
     for _ in range(args.n_epochs):
         for inputs, targets in tqdm(f_train_loader):
-            inputs, targets = inputs.to(si.device), targets.to(si.device)
-            loss = si.observe(inputs, targets, not_aug_inputs=None, SI_reg=True)
-    si.end_task(dataset=f_train_loader)
-    si.net.eval()
-    print('taskA: MNIST', accu(si.net, test_loader, si.device))
-    print('taskB: fashion-MNIST', accu(si.net, f_test_loader, si.device))
+            inputs, targets = inputs.to(ewcon.device), targets.to(ewcon.device)
+            loss = ewcon.observe(inputs, targets, not_aug_inputs=None)
+    ewcon.end_task(dataset=f_train_loader)
+    ewcon.net.eval()
+    print('taskA: MNIST', accu(ewcon.net, test_loader, ewcon.device))
+    print('taskB: fashion-MNIST', accu(ewcon.net, f_test_loader, ewcon.device))
 
     # record best parameters
-    continual_perf = accu(si.net, test_loader, si.device)
+    continual_perf = accu(ewcon.net, test_loader, ewcon.device)
     if log['acc'] < continual_perf:
         log['c'] = c
         log['xi'] = xi

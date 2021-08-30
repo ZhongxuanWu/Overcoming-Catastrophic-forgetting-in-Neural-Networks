@@ -1,10 +1,16 @@
 import torch
 
 class Args:
-    def __init__(self, lr=None, c=None, xi=None, batch_size=None, n_epochs=None) -> None:
+    def __init__(self, 
+                 lr=None, c=None, xi=None,
+                 e_lambda=None, gamma=None,
+                 batch_size=None, n_epochs=None) -> None:
+        
         self.lr = lr
         self.c = c
         self.xi = xi
+        self.e_lambda = e_lambda
+        self.gamma = gamma
         self.batch_size = batch_size
         self.n_epochs = n_epochs
 
